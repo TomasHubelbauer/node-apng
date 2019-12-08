@@ -1,6 +1,6 @@
 {
   "name": "node-apng",
-  "version: "0.0.0",
+  "version": "0.0.0",
   "dependencies": {
     "crc": "^3.8.0"
   }
