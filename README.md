@@ -14,14 +14,11 @@ image sources. Here's the APNG variant as an image source:
 
 ## To-Do
 
-### Fix the issues
+### Fix the issue with incomplete frames
 
-Right now the library generates a cropped image on the first frame and the
-subsequent frames show up completely blank.
+According to TweakPNG, the library only writes the first 8kB of each frame, but
+with frames which are larger than that, it will cause them to get cropped. The
+fix should be to write multiple data chunks as needed - to mimic what APNGAsm
+does.
 
-I aim to fix it by generating an APNG online from a few simple frames,
-generating one using this library from the same frames, comparing the
-binary of both and fixing the bugs resulting in the discrepancies.
-
-Note that http://entropymine.com/jason/tweakpng is very helpful for viewing
-contents of a PNG.
+![](test/problem.png)

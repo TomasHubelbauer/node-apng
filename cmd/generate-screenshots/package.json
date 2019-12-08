@@ -1,0 +1,9 @@
+{
+  "name": "generate-screenshots",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "puppeteer": "^2.0.0"
+  }
+}

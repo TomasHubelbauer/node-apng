@@ -9,7 +9,7 @@
 // get rid of the excess (which wouldn't break the PNG, there can be anything
 // after IEND, but would make it larger than necessary, albeit not by very much
 // at all)
-module.exports = function makeApng(buffers) {
+module.exports = function makeApng(buffers, delay) {
   const crc32 = require('crc').crc32;
 
   function findChunk(buffer, type) {
@@ -47,8 +47,9 @@ module.exports = function makeApng(buffers) {
     fctl.writeUInt32BE(ihdr.readUInt32BE(12), 16); // Height
     fctl.writeUInt32BE(0, 20); // X offset
     fctl.writeUInt32BE(0, 24); // Y offset
-    fctl.writeUInt16BE(1, 28); // Frame delay - fraction numerator
-    fctl.writeUInt16BE(1, 30); // Frame delay - fraction denominator
+    const { numerator, denominator } = delay(index);
+    fctl.writeUInt16BE(numerator, 28); // Frame delay - fraction numerator
+    fctl.writeUInt16BE(denominator, 30); // Frame delay - fraction denominator
     fctl.writeUInt8(0, 32); // Dispose mode
     fctl.writeUInt8(0, 33); // Blend mode
     fctl.writeUInt32BE(crc32(fctl.slice(4, 34)), 34); // CRC
