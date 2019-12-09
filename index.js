@@ -1,6 +1,5 @@
 // https://stackoverflow.com/a/39244362/2715716
-// This renders the first frame clipped and the subsequence ones blank :-(
-// TODO: Fix this and refactor it so that it allocates one buffer at the start
+// TODO: Refactor it so that it allocates one buffer at the start
 // which is sized approximately so that it fits the signature, IHDR from the 1st
 // frame, ACTL, the entire total of the buffers' sizes and IEND, then gets
 // written to: the signature, the IHDR from the initial frame, the FCTL and FDAT
