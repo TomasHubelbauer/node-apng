@@ -12,9 +12,7 @@
 module.exports = function makeApng(buffers, delay) {
   const crc32 = require('crc').crc32;
 
-  function findChunk(buffer, type) {
-    let offset = 8;
-
+  function findChunk(buffer, type, offset = 8) {
     while (offset < buffer.length) {
       const chunkLength = buffer.readUInt32BE(offset);
       const chunkType = buffer.slice(offset + 4, offset + 8).toString('ascii');
@@ -26,7 +24,7 @@ module.exports = function makeApng(buffers, delay) {
       offset += 4 + 4 + chunkLength + 4;
     }
 
-    throw new Error(`Chunk "${type}" not found`);
+    return null;
   }
 
   const actl = Buffer.alloc(20);
@@ -36,13 +34,17 @@ module.exports = function makeApng(buffers, delay) {
   actl.writeUInt32BE(0, 12); // Number of times to loop (0 - infinite)
   actl.writeUInt32BE(crc32(actl.slice(4, 16)), 16); // CRC
 
+  let sequenceNumber = 0;
   const frames = buffers.map((data, index) => {
     const ihdr = findChunk(data, 'IHDR');
+    if (ihdr === null) {
+      throw new Error('IHDR chunk not found!');
+    }
 
     const fctl = Buffer.alloc(38);
     fctl.writeUInt32BE(26, 0); // Length of chunk
     fctl.write('fcTL', 4); // Type of chunk
-    fctl.writeUInt32BE(index > 0 ? index * 2 - 1 : 0, 8); // Sequence number
+    fctl.writeUInt32BE(sequenceNumber++, 8); // Sequence number
     fctl.writeUInt32BE(ihdr.readUInt32BE(8), 12); // Width
     fctl.writeUInt32BE(ihdr.readUInt32BE(12), 16); // Height
     fctl.writeUInt32BE(0, 20); // X offset
@@ -54,28 +56,45 @@ module.exports = function makeApng(buffers, delay) {
     fctl.writeUInt8(0, 33); // Blend mode
     fctl.writeUInt32BE(crc32(fctl.slice(4, 34)), 34); // CRC
 
-    const idat = findChunk(data, 'IDAT');
+    let offset = 8;
+    const fdats = [];
+    while (true) {
+      const idat = findChunk(data, 'IDAT', offset);
+      if (idat === null) {
+        if (offset === 8) {
+          throw new Error('No IDAT chunks found!');
+        }
+        else {
+          break;
+        }
+      }
 
-    // All IDAT chunks except first one are converted to fdAT chunks
-    let fdat;
-    if (index === 0) {
-      fdat = idat;
-    } else {
-      const length = idat.length + 4;
+      offset = idat.byteOffset + idat.length;
 
-      fdat = Buffer.alloc(length);
-      fdat.writeUInt32BE(length - 12, 0); // Length of chunk
-      fdat.write('fdAT', 4); // Type of chunk
-      fdat.writeUInt32BE(index * 2, 8); // Sequence number
-      idat.copy(fdat, 12, 8); // Image data
-      fdat.writeUInt32BE(crc32(fdat.slice(4, length - 4)), length - 4); // CRC
+      // All IDAT chunks except first one are converted to fdAT chunks
+      if (index === 0) {
+        fdats.push(idat);
+      } else {
+        const length = idat.length + 4;
+        const fdat = Buffer.alloc(length);
+        fdat.writeUInt32BE(length - 12, 0); // Length of chunk
+        fdat.write('fdAT', 4); // Type of chunk
+        fdat.writeUInt32BE(sequenceNumber++, 8); // Sequence number
+        idat.copy(fdat, 12, 8); // Image data
+        fdat.writeUInt32BE(crc32(fdat.slice(4, length - 4)), length - 4); // CRC
+        fdats.push(fdat);
+      }
     }
 
-    return Buffer.concat([fctl, fdat]);
+    return Buffer.concat([fctl, ...fdats]);
   });
 
   const signature = Buffer.from('\211PNG\r\n\032\n', 'ascii');
   const ihdr = findChunk(buffers[0], 'IHDR');
+  if (ihdr === null) {
+    throw new Error('IHDR chunk not found!');
+  }
+
   const iend = Buffer.from('0000000049454e44ae426082', 'hex');
   return Buffer.concat([signature, ihdr, actl, ...frames, iend]);
 }
