@@ -88,7 +88,7 @@ module.exports = function makeApng(buffers, delay) {
     return Buffer.concat([fctl, ...fdats]);
   });
 
-  const signature = Buffer.from('\211PNG\r\n\032\n', 'ascii');
+  const signature = Buffer.from('89504e470d0a1a0a', 'hex');
   const ihdr = findChunk(buffers[0], 'IHDR');
   if (ihdr === null) {
     throw new Error('IHDR chunk not found!');
