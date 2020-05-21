@@ -11,7 +11,7 @@ I've fixed two bugs in it:
 
 ## Usage
 
-`npm install https://github.com/TomasHubelbauer/node-apng`
+`npm install tomashubelbauer/node-apng`
 
 ```js
 const apng = require('node-apng');
