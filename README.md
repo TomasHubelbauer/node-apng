@@ -25,6 +25,21 @@ void async function () {
 }()
 ```
 
+## Support
+
+### APNG on GitHub
+
+GitHub repository file preview page will only preview images with a PNG
+extension, but will animate properly (depending on browser support) if animated.
+
+GitHub MarkDown renderer allows image sources with both PNG and APNG extensions.
+Will animate properly subject to browser support.
+
+### APNG in VS Code
+
+VS Code will correctly preview and animate images as long as they have a PNG
+extension, not APNG extension.
+
 ## Development
 
 Use Node 16+ (ESM, TLA)
@@ -47,15 +62,12 @@ The first frame should be skipped in the animation and should be a preview with
 a subtitle which says this is an animated image and your browser doesn't support
 APNG so you're getting only a preview.
 
-## APNG on GitHub
+### Implement dispose op and blend op to be able to do differential frames
 
-GitHub repository file preview page will only preview images with a PNG
-extension, but will animate properly (depending on browser support) if animated.
+This might cut down on APNG size where the input is a series of screenshots of a
+screencast video. Most of the screen is likely to remain unchanged. Use Sharp
+(already referenced) to do the frame comparison and generation of a frame which
+only contains the changed pixels (and calculation of the change region). Note
+that transparency support needs to be considered too, probably.
 
-GitHub MarkDown renderer allows image sources with both PNG and APNG extensions.
-Will animate properly subject to browser support.
-
-## APNG in VS Code
-
-VS Code will correctly preview and animate images as long as they have a PNG
-extension, not APNG extension.
+https://wiki.mozilla.org/APNG_Specification#.60fcTL.60:_The_Frame_Control_Chunk
