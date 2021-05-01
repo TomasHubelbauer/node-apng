@@ -1,3 +1,5 @@
+import crc from 'crc';
+
 // https://stackoverflow.com/a/39244362/2715716
 // TODO: Refactor it so that it allocates one buffer at the start
 // which is sized approximately so that it fits the signature, IHDR from the 1st
@@ -8,9 +10,7 @@
 // get rid of the excess (which wouldn't break the PNG, there can be anything
 // after IEND, but would make it larger than necessary, albeit not by very much
 // at all)
-module.exports = function makeApng(buffers, delay) {
-  const crc32 = require('crc').crc32;
-
+export default function makeApng(/** @type {Buffer[]} */ buffers, /** @type {number} */ delay) {
   function findChunk(buffer, type, offset = 8) {
     while (offset < buffer.length) {
       const chunkLength = buffer.readUInt32BE(offset);
@@ -31,7 +31,7 @@ module.exports = function makeApng(buffers, delay) {
   actl.write('acTL', 4); // Type of chunk
   actl.writeUInt32BE(buffers.length, 8); // Number of frames
   actl.writeUInt32BE(0, 12); // Number of times to loop (0 - infinite)
-  actl.writeUInt32BE(crc32(actl.slice(4, 16)), 16); // CRC
+  actl.writeUInt32BE(crc.crc32(actl.slice(4, 16)), 16); // CRC
 
   let sequenceNumber = 0;
   const frames = buffers.map((data, index) => {
@@ -53,7 +53,7 @@ module.exports = function makeApng(buffers, delay) {
     fctl.writeUInt16BE(denominator, 30); // Frame delay - fraction denominator
     fctl.writeUInt8(0, 32); // Dispose mode
     fctl.writeUInt8(0, 33); // Blend mode
-    fctl.writeUInt32BE(crc32(fctl.slice(4, 34)), 34); // CRC
+    fctl.writeUInt32BE(crc.crc32(fctl.slice(4, 34)), 34); // CRC
 
     let offset = 8;
     const fdats = [];
@@ -80,7 +80,7 @@ module.exports = function makeApng(buffers, delay) {
         fdat.write('fdAT', 4); // Type of chunk
         fdat.writeUInt32BE(sequenceNumber++, 8); // Sequence number
         idat.copy(fdat, 12, 8); // Image data
-        fdat.writeUInt32BE(crc32(fdat.slice(4, length - 4)), length - 4); // CRC
+        fdat.writeUInt32BE(crc.crc32(fdat.slice(4, length - 4)), length - 4); // CRC
         fdats.push(fdat);
       }
     }

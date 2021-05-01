@@ -25,6 +25,16 @@ void async function () {
 }()
 ```
 
+## Development
+
+Use Node 16+ (ESM, TLA)
+
+```sh
+npm install
+cd test
+npm start
+```
+
 ## To-Do
 
 ### Add a GitHub Action for tests
