@@ -14,14 +14,14 @@ I've fixed two bugs in it:
 `npm install tomashubelbauer/node-apng`
 
 ```js
-const apng = require('node-apng');
-const fs = require('fs-extra');
+import apng from 'node-apng';
+import fs from 'fs';
 
 void async function () {
   const buffers = [/* … */]; // Buffers of PNG image data
   // The callback is for frame duration: `numeration/denominator` seconds
   const buffer = apng(buffers, index => ({ numerator: 1, denominator: 10 }));
-  await fs.writeFile('apng.png', buffer);
+  await fs.promises.writeFile('apng.png', buffer);
 }()
 ```
 
