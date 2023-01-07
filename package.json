@@ -4,6 +4,6 @@
   "type": "module",
   "dependencies": {
     "crc": "^3.8.0",
-    "sharp": "^0.28.1"
+    "sharp": "^0.31.3"
   }
 }
