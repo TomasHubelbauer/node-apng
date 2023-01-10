@@ -17,12 +17,11 @@ I've fixed two bugs in it:
 import apng from 'node-apng';
 import fs from 'fs';
 
-void async function () {
-  const buffers = [/* … */]; // Buffers of PNG image data
-  // The callback is for frame duration: `numeration/denominator` seconds
-  const buffer = apng(buffers, index => ({ numerator: 1, denominator: 10 }));
-  await fs.promises.writeFile('apng.png', buffer);
-}()
+const buffers = [/* … */]; // Buffers of PNG image data
+
+// The callback is for frame duration: `numeration/denominator` seconds
+const buffer = apng(buffers, index => ({ numerator: 1, denominator: 10 }));
+await fs.promises.writeFile('apng.png', buffer);
 ```
 
 ## Support
