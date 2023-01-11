@@ -1,5 +1,6 @@
-import crc from 'crc';
-
+const crc = require("crc");
+const gifFrames = require("gif-frames");
+const sharp = require("sharp");
 // https://stackoverflow.com/a/39244362/2715716
 // TODO: Refactor it so that it allocates one buffer at the start
 // which is sized approximately so that it fits the signature, IHDR from the 1st
@@ -10,11 +11,35 @@ import crc from 'crc';
 // get rid of the excess (which wouldn't break the PNG, there can be anything
 // after IEND, but would make it larger than necessary, albeit not by very much
 // at all)
-export default function makeApng(/** @type {Buffer[]} */ buffers, /** @type {number} */ delay) {
+module.exports = async function makeApng(
+  /** @type {Buffer[]} */ buffers,
+  /** @type {number} */ delay
+) {
+  if (
+    typeof buffers !== "object" &&
+    !Array.isArray(buffers) &&
+    typeof buffers !== "string"
+  )
+    throw new TypeError(
+      "Buffers must be an array of Buffers or a url or a local path"
+    );
+  if (typeof buffers === "string") {
+    await gifFrames({
+      url: buffers,
+      frames: "all",
+      cumulative: true,
+    }).then(async function (frameData) {
+      buffers = await Promise.all(
+        frameData.map(async (frame) =>
+          sharp(frame.getImage()._obj).png().toBuffer()
+        )
+      );
+    });
+  }
   function findChunk(buffer, type, offset = 8) {
     while (offset < buffer.length) {
       const chunkLength = buffer.readUInt32BE(offset);
-      const chunkType = buffer.slice(offset + 4, offset + 8).toString('ascii');
+      const chunkType = buffer.slice(offset + 4, offset + 8).toString("ascii");
 
       if (chunkType === type) {
         return buffer.slice(offset, offset + chunkLength + 12);
@@ -28,21 +53,21 @@ export default function makeApng(/** @type {Buffer[]} */ buffers, /** @type {num
 
   const actl = Buffer.alloc(20);
   actl.writeUInt32BE(8, 0); // Length of chunk
-  actl.write('acTL', 4); // Type of chunk
+  actl.write("acTL", 4); // Type of chunk
   actl.writeUInt32BE(buffers.length, 8); // Number of frames
   actl.writeUInt32BE(0, 12); // Number of times to loop (0 - infinite)
   actl.writeUInt32BE(crc.crc32(actl.slice(4, 16)), 16); // CRC
 
   let sequenceNumber = 0;
   const frames = buffers.map((data, index) => {
-    const ihdr = findChunk(data, 'IHDR');
+    const ihdr = findChunk(data, "IHDR");
     if (ihdr === null) {
-      throw new Error('IHDR chunk not found!');
+      throw new Error("IHDR chunk not found!");
     }
 
     const fctl = Buffer.alloc(38);
     fctl.writeUInt32BE(26, 0); // Length of chunk
-    fctl.write('fcTL', 4); // Type of chunk
+    fctl.write("fcTL", 4); // Type of chunk
     fctl.writeUInt32BE(sequenceNumber++, 8); // Sequence number
     fctl.writeUInt32BE(ihdr.readUInt32BE(8), 12); // Width
     fctl.writeUInt32BE(ihdr.readUInt32BE(12), 16); // Height
@@ -58,12 +83,11 @@ export default function makeApng(/** @type {Buffer[]} */ buffers, /** @type {num
     let offset = 8;
     const fdats = [];
     while (true) {
-      const idat = findChunk(data, 'IDAT', offset);
+      const idat = findChunk(data, "IDAT", offset);
       if (idat === null) {
         if (offset === 8) {
-          throw new Error('No IDAT chunks found!');
-        }
-        else {
+          throw new Error("No IDAT chunks found!");
+        } else {
           break;
         }
       }
@@ -77,7 +101,7 @@ export default function makeApng(/** @type {Buffer[]} */ buffers, /** @type {num
         const length = idat.length + 4;
         const fdat = Buffer.alloc(length);
         fdat.writeUInt32BE(length - 12, 0); // Length of chunk
-        fdat.write('fdAT', 4); // Type of chunk
+        fdat.write("fdAT", 4); // Type of chunk
         fdat.writeUInt32BE(sequenceNumber++, 8); // Sequence number
         idat.copy(fdat, 12, 8); // Image data
         fdat.writeUInt32BE(crc.crc32(fdat.slice(4, length - 4)), length - 4); // CRC
@@ -88,12 +112,12 @@ export default function makeApng(/** @type {Buffer[]} */ buffers, /** @type {num
     return Buffer.concat([fctl, ...fdats]);
   });
 
-  const signature = Buffer.from('89504e470d0a1a0a', 'hex');
-  const ihdr = findChunk(buffers[0], 'IHDR');
+  const signature = Buffer.from("89504e470d0a1a0a", "hex");
+  const ihdr = findChunk(buffers[0], "IHDR");
   if (ihdr === null) {
-    throw new Error('IHDR chunk not found!');
+    throw new Error("IHDR chunk not found!");
   }
 
-  const iend = Buffer.from('0000000049454e44ae426082', 'hex');
+  const iend = Buffer.from("0000000049454e44ae426082", "hex");
   return Buffer.concat([signature, ihdr, actl, ...frames, iend]);
-}
+};
