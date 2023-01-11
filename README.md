@@ -8,19 +8,51 @@ I've fixed two bugs in it:
 
 - IDAT chunk CRC calculation was being passed slice range, not the slice buffer
 - PNGs with multiple IDAT chunks only had their first IDAT chunk considered
-
+- Auto gif to apng
 ## Usage
 
 `npm install tomashubelbauer/node-apng`
+# **Usage**
 
+### CommonJS
+
+```js
+const apng = require("node-apng");
+```
+
+### ES6
+
+```js
+import apng from 'node-apng';
+```
+### Example
+#### Merge Frames to apng
 ```js
 import apng from 'node-apng';
 import fs from 'fs';
 
-const buffers = [/* … */]; // Buffers of PNG image data
+const buffers = [/* … */]; // Buffers of PNG image data like ["./fram1.png","./fram2.png"...]
 
 // The callback is for frame duration: `numeration/denominator` seconds
-const buffer = apng(buffers, index => ({ numerator: 1, denominator: 10 }));
+const buffer = await apng(buffers, index => ({ numerator: 1, denominator: 10 }));
+await fs.promises.writeFile('apng.png', buffer);
+```
+#### url gif to apng
+```js
+import apng from 'node-apng';
+import fs from 'fs';
+
+// The callback is for frame duration: `numeration/denominator` seconds
+const buffer = await apng("https://emojipedia-us.s3.amazonaws.com/source/noto-emoji-animations/344/winking-face_1f609.gif", index => ({ numerator: 1, denominator: 10 }));
+await fs.promises.writeFile('apng.png', buffer);
+```
+#### local gif to apng
+```js
+import apng from 'node-apng';
+import fs from 'fs';
+
+// The callback is for frame duration: `numeration/denominator` seconds
+const buffer = await apng("./Fun.gif", index => ({ numerator: 1, denominator: 10 }));
 await fs.promises.writeFile('apng.png', buffer);
 ```
 
