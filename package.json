@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "crc": "^3.8.0",
-    "sharp": "^0.31.3"
+    "sharp": "^0.31.3",
+    "gif-frames": "^1.0.1"
   }
 }
